@@ -43,6 +43,33 @@ RUN mkdir -p /games \
     && echo "${ZORK2_SHA256}  /games/zork2.z3" | sha256sum -c - \
     && echo "${ZORK3_SHA256}  /games/zork3.z3" | sha256sum -c -
 
+# Chrome on Android has a known, unfixed ttyd/xterm.js bug (tsl0922/
+# ttyd#191, closed "not planned" upstream): the fit calculation on tall
+# mobile viewports reports far more terminal rows than the screen can
+# actually show at a normal font size. Root-caused by capturing the real
+# WebSocket frames, not guessed: frotz positions its opening screen with
+# an absolute cursor move computed from that reported row count (e.g.
+# `ESC[109d` on a wrongly-inflated 117-row terminal), so what looks
+# completely normal on an ordinary ~24-row terminal leaves most of the
+# screen blank on one that large.
+#
+# Fix: generate a custom ttyd index page that caps the terminal
+# container's height under a max-width media query, so only phone-shaped
+# viewports are affected and desktop keeps the full window. Generated at
+# build time, not vendored, so it always matches whatever TTYD_VERSION
+# is pinned above: briefly runs ttyd to fetch its own default index.html,
+# then injects the override.
+#
+# Deliberately does NOT use `-t fontSize`/`-t rendererType` to try to fix
+# this (see entrypoint.sh for why: either one triggers a second, harmful
+# resize after frotz has already drawn its opening screen).
+RUN (ttyd -p 19999 true &) \
+    && sleep 1 \
+    && wget -qO /ttyd-index.html http://127.0.0.1:19999/ \
+    && pkill ttyd \
+    && sed -i 's|</head>|<style>@media (max-width: 1000px){#terminal-container{max-height:640px!important}}</style></head>|' /ttyd-index.html \
+    && grep -q "max-width: 1000px" /ttyd-index.html
+
 COPY landing /landing
 COPY select.sh /select.sh
 COPY entrypoint.sh /entrypoint.sh

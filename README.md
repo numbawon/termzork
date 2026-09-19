@@ -76,18 +76,30 @@ accepts keystrokes, which is a much worse failure mode than an
 unstyled-but-working terminal. Color (`ZORK_THEME`) doesn't have that
 problem and is safe to override.
 
-## Known issue: Chrome on Android
+## Fixed: Chrome on Android blank-screen bug
 
 There's an unfixed upstream bug ([tsl0922/ttyd#191](https://github.com/tsl0922/ttyd/issues/191),
-closed "not planned") where the terminal's fit calculation comes out
-wrong on some mobile browsers — most of the screen ends up blank, with
-the actual game text crammed at the bottom. This repo carries two
-mitigations by default (`-t fontSize=15 -t rendererType=dom` in
-`entrypoint.sh`): an explicit font size instead of auto-detected cell
-size, and the DOM renderer instead of canvas, since canvas-based
-cell-metrics math is where the miscalculation actually happens. Neither
-is a confirmed fix, just the cheapest things worth trying. If you still
-hit it, that upstream issue is the place to look.
+closed "not planned") where a tall mobile viewport makes ttyd/xterm.js
+report far more terminal rows than the screen can actually show at a
+normal font size. Root-caused with a headless browser and real
+WebSocket frame capture rather than guessed: frotz positions its
+opening screen with an absolute cursor move computed from that row
+count (`ESC[109d` on a wrongly-inflated 117-row terminal, confirmed
+against the actual frames), so the exact same convention that looks
+completely normal on an ordinary ~24-row terminal leaves most of the
+screen blank on one that large.
+
+The Dockerfile generates a custom ttyd index page (`-I`) that caps the
+terminal container's height under a `max-width` media query, so only
+phone-shaped viewports are affected and desktop keeps the full window.
+Deliberately does **not** use `-t fontSize`/`-t rendererType` to try to
+fix this — an earlier attempt at exactly that made it worse, because
+either one forces xterm.js to re-measure cell metrics right after
+connecting, which triggers a *second* resize once frotz has already
+drawn its opening screen. frotz's redraw-on-resize is what actually
+causes the blank screen; the row-count miscalculation just made it
+visible. Theme colors and `cursorBlink` don't touch cell metrics, so
+they don't trigger a re-fit and stay in `entrypoint.sh`.
 
 ## Credits
 
