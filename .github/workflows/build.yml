@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Build image
+        run: docker build -t termzork:ci .
+
+      - name: Smoke test
+        run: |
+          docker run -d --name termzork-ci -p 8080:8080 -p 7681:7681 termzork:ci
+          sleep 3
+          docker logs termzork-ci
+          curl -sf -o /dev/null http://localhost:8080/
+          curl -sf -o /dev/null http://localhost:7681/
+          docker stop termzork-ci

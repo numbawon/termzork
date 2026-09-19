@@ -1,0 +1,9 @@
+services:
+  termzork:
+    build: .
+    # Or, once you've published an image somewhere:
+    # image: ghcr.io/<you>/termzork:latest
+    ports:
+      - "8080:8080"   # landing page
+      - "7681:7681"   # the game itself
+    restart: unless-stopped
