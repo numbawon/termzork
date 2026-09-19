@@ -76,6 +76,19 @@ accepts keystrokes, which is a much worse failure mode than an
 unstyled-but-working terminal. Color (`ZORK_THEME`) doesn't have that
 problem and is safe to override.
 
+## Known issue: Chrome on Android
+
+There's an unfixed upstream bug ([tsl0922/ttyd#191](https://github.com/tsl0922/ttyd/issues/191),
+closed "not planned") where the terminal's fit calculation comes out
+wrong on some mobile browsers — most of the screen ends up blank, with
+the actual game text crammed at the bottom. This repo carries two
+mitigations by default (`-t fontSize=15 -t rendererType=dom` in
+`entrypoint.sh`): an explicit font size instead of auto-detected cell
+size, and the DOM renderer instead of canvas, since canvas-based
+cell-metrics math is where the miscalculation actually happens. Neither
+is a confirmed fix, just the cheapest things worth trying. If you still
+hit it, that upstream issue is the place to look.
+
 ## Credits
 
 - [Zork I](https://github.com/historicalsource/zork1),

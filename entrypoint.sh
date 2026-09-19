@@ -13,7 +13,8 @@ HTTPD_PID=$!
 
 trap 'kill "$HTTPD_PID" 2>/dev/null; exit 0' TERM INT
 
-ttyd -W -p "$TTYD_PORT" -t theme="$ZORK_THEME" -t cursorBlink=true -a /select.sh &
+ttyd -W -p "$TTYD_PORT" -t theme="$ZORK_THEME" -t cursorBlink=true \
+  -t fontSize=15 -t rendererType=dom -a /select.sh &
 TTYD_PID=$!
 
 wait "$TTYD_PID"
